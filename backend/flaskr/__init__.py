@@ -1,11 +1,11 @@
 from crypt import methods
 import os
-from pickletools import read_string1
+import random
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import func
-import random
+from random import choice
 
 from models import setup_db, Question, Category, db
 
@@ -146,12 +146,12 @@ def create_app(test_config=None):
         try:
             questions = Question.query.filter(func.lower(Question.question).contains(
                 func.lower(request.json['searchTerm']))).all()
-            print(questions)
             if (questions):
                 
                 questions_formated = [qst.format() for qst in questions]
             else:
                 abort(404)
+
         except Exception as e:
             print(e)
             abort(404)
@@ -172,12 +172,15 @@ def create_app(test_config=None):
         try:
             questions_request = Question.query.join(Category).filter(
                 Question.category == category_id).all()
-            questions = [qst.format() for qst in questions_request]
-            return jsonify({
-                'questions': questions
-            })
+
+            if questions_request:
+                questions = [qst.format() for qst in questions_request]
+                return jsonify({
+                    'questions': questions
+                })
+            else:
+                abort(404)
         except Exception as e:
-            print(e)
             abort(404)
     """
     @TODO:
@@ -190,11 +193,49 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     """
-    @app.route("/quizz", methods=["POST"])
+    @app.route("/quizzes", methods=["POST"])
     def search_next_question():
+        current_category = request.json["quiz_category"]
+        previous_questions = request.json["previous_questions"]
+        try:
+            questions = {}
+            qst_id = 2
 
-        return
-    """
+            if current_category["type"] == "click":
+                questions_request = Question.query.all()
+            else:
+                questions_request = Question.query.join(Category).filter(
+                Category.id == current_category["id"]).all()
+            if questions_request:
+                qst_id = random.randint(0, len(questions_request)-1)
+                print(previous_questions)
+                randomized = False
+
+                if len(questions_request) == len(previous_questions):
+                    abort(404)
+
+                while(not randomized):
+                    print(questions_request[qst_id].id)
+                    if questions_request[qst_id].id not in previous_questions:
+                        randomized = True
+                    else:
+                        qst_id = random.randint(0, len(questions_request)-1)
+                questions = questions_request[qst_id].format()
+            else:
+                abort(404)
+                
+
+
+        except Exception as e :
+                abort(404)            
+
+        return jsonify({
+            "success": True,
+            "question": questions,
+            "previous_questions": previous_questions
+        })
+    """    
+
     @TODO:
     Create error handlers for all expected errors
     including 404 and 422.
