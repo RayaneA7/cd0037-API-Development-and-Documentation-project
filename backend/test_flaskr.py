@@ -5,7 +5,7 @@ import json
 from flask_sqlalchemy import SQLAlchemy
 
 from flaskr import create_app
-from models import setup_db, Question, Category
+from models import setup_db, Question, Category, db
 
 
 class TriviaTestCase(unittest.TestCase):
@@ -15,7 +15,15 @@ class TriviaTestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app()
         self.client = self.app.test_client
-        self.database_name = "trivia"
+        self.database_name = "trivia_test"
+        db.session.add(Category("sport"))
+        db.session.add(Category("social"))
+        db.session.add(Category("media"))
+        question = {
+           "question":"last worldcup winner","answer":"France","category":1,"difficulty":1
+        }
+        Question.insert(Question(question["question"],question["answer"], question["category"], question["difficulty"]))
+        db.session.commit()
         
         self.database_path = 'postgresql://rayan:1234@{}/{}'.format('localhost:5432', self.database_name)
         setup_db(self.app, self.database_path)
@@ -35,6 +43,29 @@ class TriviaTestCase(unittest.TestCase):
     TODO
     Write at least one test for each test for successful operation and for expected errors.
     """
+
+    def test_post_questions(self):
+        """Test _____________ """
+        res = self.client().post('/questions', json={
+           "question":"last worldcup winner","answer":"France","category":1,"difficulty":1
+        })
+        data = json.loads(res.data)
+        print(data)
+        self.assertEqual(res.status_code, 200)
+        # self.assertEqual(data['success'], True)
+        self.assertTrue(data['success'])
+
+    def test_404_post_questions(self):
+        """Test _____________ """
+        res = self.client().post('/questions', json={
+           "answer":"France","category":1,"difficulty":1
+        })
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'resource not found')
+
+
     def test_get_all_categories(self):
         """Test _____________ """
         res = self.client().get('/categories')
@@ -53,7 +84,7 @@ class TriviaTestCase(unittest.TestCase):
         """Test _____________ """
         res = self.client().get('/questions?page=1')
         data = json.loads(res.data)
-        print(data)
+        # print(data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"],True)
 
@@ -68,8 +99,8 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_delete_a_question(self):
         """Test _____________ """
-        res = self.client().delete('/questions/8')
-        question = Question.query.filter(Question.id == 8).one_or_none()
+        res = self.client().delete('/questions/1')
+        question = Question.query.filter(Question.id == 0).one_or_none()
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json["success"], True)
         self.assertTrue(res.json["question_id"])
@@ -83,27 +114,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.json["success"], False)
         # self.assertTrue(res.json["question_id"])
         self.assertEqual(question, None)
-
-    def test_post_questions(self):
-        """Test _____________ """
-        res = self.client().post('/questions', json={
-           "questions":"last worldcup winner","answer":"France","category":1,"difficulty":1
-        })
-        data = json.loads(res.data)
-        self.assertEqual(res.status_code, 200)
-        # self.assertEqual(data['success'], True)
-        self.assertTrue(data['questions'])
-
-    def test_404_post_questions(self):
-        """Test _____________ """
-        res = self.client().post('/questions', json={
-           "answer":"France","category":1,"difficulty":1
-        })
-        data = json.loads(res.data)
-        self.assertEqual(res.status_code, 404)
-        self.assertEqual(data['success'], False)
-        self.assertEqual(data['message'], 'resource not found')
-
 
 
     def test_get_questions_by_search(self):
@@ -157,6 +167,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code,404)
         self.assertFalse(data["success"])       
     
+
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()

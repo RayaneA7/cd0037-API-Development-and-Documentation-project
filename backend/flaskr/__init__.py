@@ -127,7 +127,7 @@ def create_app(test_config=None):
             Question.insert(Question(
                 request.json["question"], request.json["answer"], request.json["difficulty"], request.json["category"]))
         except:
-            abort(500)
+            abort(404)
         return jsonify({
             "success": True
         })
@@ -208,14 +208,14 @@ def create_app(test_config=None):
                 Category.id == current_category["id"]).all()
             if questions_request:
                 qst_id = random.randint(0, len(questions_request)-1)
-                print(previous_questions)
+                # print(previous_questions)
                 randomized = False
 
                 if len(questions_request) == len(previous_questions):
                     abort(404)
 
                 while(not randomized):
-                    print(questions_request[qst_id].id)
+                    # print(questions_request[qst_id].id)
                     if questions_request[qst_id].id not in previous_questions:
                         randomized = True
                     else:
